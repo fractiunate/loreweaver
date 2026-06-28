@@ -1,29 +1,47 @@
-mission: MISSION.md
-
 files:
   exclude:
     - .env
-    - ."venv/*"
-    - "__pycache__/*"
-    - "cocoindex.db"
+    - .venv/**
+    - __pycache__/**
+    - cocoindex.db/**
+
   include:
-    - pattern: -"./pi/skills/*.md"
-        -"./pi/skills/**/*.md"
+    - pattern: .lore/objectives/**/*.md
+      role: objective
+
+    - pattern: ./.lore/MISSION.md
+      role: mission
+
+    - pattern: .pi/skills/**/*.md
       role: skill
 
-    - pattern: "src/**/*.py"
-      role: code
+    - pattern: docs/adr/**/*.md
+      role: adr
 
-    - pattern: "main.py"
-      role: code
-
-    - pattern: "README.md"
+    - pattern: docs/**/*.md
       role: documentation
+
+    - pattern: knowledge/**/*.md
+      role: documentation
+
+    - pattern: MISSION.md
+      role: mission
+
+    - pattern: README.md
+      role: documentation
+
+    - pattern: local-setup.md
+      role: documentation
+
+    - pattern: src/**/*.py
+      role: code
+
+    - pattern: main.py
+      role: code
 
 github:
   issues:
-    # - default_role: issue -> done in code/ default asign from cocoindex
-
+    # Default role is issue.
     - label: bug
       role: bug_report
 
@@ -34,11 +52,10 @@ github:
       role: documentation_task
 
   pull_requests:
-    # - default_role: pull_request  -> done in code/ default asign from cocoindex
-
+    # Default role is pull_request.
     - label: adr
       role: adr_proposal
 
     - role: feature_merge
-      branch_from: "feature/"
-      branch_to: "main"
+      branch_from: feature/
+      branch_to: main

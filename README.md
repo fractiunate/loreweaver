@@ -32,9 +32,22 @@ Loreweaver is designed to collect knowledge from project artifacts such as:
 - issues
 - PRs
 - plans
+- objectives
 - mission statements
 - tech stack notes
 - project values
+
+## Objectives
+
+Loreweaver supports `objective` as a knowledge role for intended tasks, capabilities, or directions the project may pursue.
+
+Objectives can be stored as local Markdown files in:
+
+```text
+.lore/objectives/<objective-name>.md
+```
+
+These files are classified as `objective` by `lore.yaml` and can later be checked against project knowledge, implementation plans, issues, and pull requests.
 
 ## What Loreweaver should help answer
 
