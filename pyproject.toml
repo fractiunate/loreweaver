@@ -1,7 +1,7 @@
 [project]
-name = "cocoindex-psql"
+name = "loreweaver"
 version = "0.1.0"
-description = "Add your description here"
+description = "Living project knowledge base with claim extraction and consistency checks"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

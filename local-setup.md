@@ -1,6 +1,6 @@
-# cocoindex-psql
+# Local setup
 
-Minimal CocoIndex + PostgreSQL/pgvector Markdown embedding demo.
+Minimal Loreweaver + CocoIndex + PostgreSQL/pgvector setup.
 
 ## Setup
 
@@ -16,36 +16,36 @@ POSTGRES_URL=postgresql://cocoindex:cocoindex@localhost:15000/cocoindex
 COCOINDEX_DB=./cocoindex.db
 ```
 
-Put Markdown files in `markdown_files/`.
+Project knowledge files currently live in `docs/`, `knowledge/`, and `.lore/`.
 
 ## Index documents
 
 ```bash
-uv run cocoindex update main.py
+uv run cocoindex update src/loreweaver/main.py
 ```
 
 To rerun processing for all files, even if memoized inputs are unchanged:
 
 ```bash
-uv run cocoindex update main --full-reprocess
+uv run cocoindex update src/loreweaver/main.py --full-reprocess
 ```
 
 For a clean CocoIndex DB reset/rebuild after schema changes:
 
 ```bash
-uv run cocoindex update main --reset
+uv run cocoindex update src/loreweaver/main.py --reset
 ```
 
 To skip the confirmation prompt:
 
 ```bash
-uv run cocoindex update main --reset --force
+uv run cocoindex update src/loreweaver/main.py --reset --force
 ```
 
 ## Query
 
 ```bash
-uv run python main.py "your search question"
+uv run python src/loreweaver/main.py "your search question"
 ```
 
 ## Stop Postgres

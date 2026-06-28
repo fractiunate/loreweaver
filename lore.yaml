@@ -36,9 +36,6 @@ files:
     - pattern: src/**/*.py
       role: code
 
-    - pattern: main.py
-      role: code
-
 github:
   issues:
     # Default role is issue.

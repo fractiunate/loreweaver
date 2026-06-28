@@ -3,21 +3,21 @@ Text Embedding / Markdown Knowledge Index with CocoIndex.
 
 Index your Markdown files:
 
-    cocoindex update main
+    cocoindex update src/loreweaver/main.py
 
 Live mode, watching for Markdown file changes:
 
-    cocoindex update -L main
+    cocoindex update -L src/loreweaver/main.py
 
 Query the semantic index:
 
-    python main.py "how do refresh tokens work?"
+    python src/loreweaver/main.py "how do refresh tokens work?"
 
 Expected folder structure:
 
     .
-    ├── main.py
-    └── markdown_files/
+    ├── src/loreweaver/main.py
+    └── docs/
         ├── notes.md
         └── architecture.md
 
@@ -70,7 +70,7 @@ DATABASE_URL = os.getenv(
 TABLE_NAME = "doc_embeddings"
 PG_SCHEMA_NAME = "coco_examples"
 
-MARKDOWN_DIR = pathlib.Path("./markdown_files")
+MARKDOWN_DIR = pathlib.Path("./docs")
 
 EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 TOP_K = 5
