@@ -9,7 +9,7 @@ from loreweaver.index.context import EMBEDDER
 
 
 @dataclass
-class ChunkEmbedding:
+class EmbeddedChunkRow:
     """
     One row in Postgres.
 
@@ -30,23 +30,20 @@ class ChunkEmbedding:
     embedding:
         Vector generated from the chunk text.
     """
-
     id: int
+    source_id: str
+    source_path: str | None
+    source_kind: str
 
+    content_role: str
+    content_format: str
     heading_path: str
-    file_modified_at: datetime
+    file_modified_at: datetime | None
     chunk_hash: str
     chunk_index: int
     chunk_start: int
     chunk_end: int
     text: str
-
-    # Classification Data
-    source_kind = "local_file"
-    source_path: str
-
-    content_role: str = "unknown"
-    content_format: str = "markdown"
 
     embedding: Annotated[NDArray, EMBEDDER]
 
