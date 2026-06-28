@@ -6,7 +6,7 @@ Loreweaver runs once in CI with the project configuration and evaluates whether 
 
 ## Desired behavior
 
-- Load `lore.yaml`.
+- Load `.lore/lore.yaml`.
 - Collect the relevant project sources.
 - Read the issue or pull request context.
 - Compare the new input against known claims, decisions, values, tech stack notes, and mission.

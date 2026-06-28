@@ -47,7 +47,7 @@ Objectives can be stored as local Markdown files in:
 .lore/objectives/<objective-name>.md
 ```
 
-These files are classified as `objective` by `lore.yaml` and can later be checked against project knowledge, implementation plans, issues, and pull requests.
+These files are classified as `objective` by `.lore/lore.yaml` and can later be checked against project knowledge, implementation plans, issues, and pull requests.
 
 ## What Loreweaver should help answer
 
