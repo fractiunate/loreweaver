@@ -1,91 +1,38 @@
-"""
-Text Embedding / Markdown Knowledge Index with CocoIndex.
-
-Index your Markdown files:
-
-    cocoindex update src/loreweaver/main.py
-
-Live mode, watching for Markdown file changes:
-
-    cocoindex update -L src/loreweaver/main.py
-
-Query the semantic index:
-
-    python src/loreweaver/main.py "how do refresh tokens work?"
-
-Expected folder structure:
-
-    .
-    ├── src/loreweaver/main.py
-    └── docs/
-        ├── notes.md
-        └── architecture.md
-
-Environment:
-
-    export POSTGRES_URL="postgres://cocoindex:cocoindex@localhost/cocoindex"
-"""
-
 from __future__ import annotations
 
-import asyncio
-import os
-import pathlib
-import sys
 import hashlib
-import re
 
-import argparse
+import pathlib
+
 
 from datetime import datetime, timezone
 
-from dataclasses import dataclass
-from typing import Annotated, AsyncIterator
-
 import asyncpg
-from dotenv import load_dotenv
-from numpy.typing import NDArray
-from pgvector.asyncpg import register_vector
+
+from typing import AsyncIterator
+
+from cocoindex.ops.sentence_transformers import SentenceTransformerEmbedder
+
 
 import cocoindex as coco
 from cocoindex.connectors import localfs, postgres
-from cocoindex.ops.sentence_transformers import SentenceTransformerEmbedder
 from cocoindex.ops.text import RecursiveSplitter
-from cocoindex.resources.chunk import Chunk
 from cocoindex.resources.file import FileLike, PatternFilePathMatcher
 from cocoindex.resources.id import IdGenerator
 
-load_dotenv()
+from loreweaver.index.context import EMBEDDER, PG_DB
+from loreweaver.index.schema import ChunkEmbedding, IndexedChunk
+from loreweaver.transforms.markdown import heading_path_at
 
 
-# -----------------------------------------------------------------------------
-# Configuration
-# -----------------------------------------------------------------------------
-
-DATABASE_URL = os.getenv(
-    "POSTGRES_URL",
-    "postgres://cocoindex:cocoindex@localhost/cocoindex",
+from loreweaver.config import (
+    DATABASE_URL,
+    MARKDOWN_DIR,
+    PG_SCHEMA_NAME,
+    TABLE_NAME,
+    EMBED_MODEL,
 )
 
-TABLE_NAME = "doc_embeddings"
-PG_SCHEMA_NAME = "coco_examples"
-
-MARKDOWN_DIR = pathlib.Path("./docs")
-
-EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-TOP_K = 5
-
-
-# -----------------------------------------------------------------------------
-# CocoIndex shared context
-# -----------------------------------------------------------------------------
-
-PG_DB = coco.ContextKey[asyncpg.Pool]("text_embedding_db")
-
-EMBEDDER = coco.ContextKey[SentenceTransformerEmbedder](
-    "embedder",
-    detect_change=True,
-)
 
 _splitter = RecursiveSplitter()
 
@@ -111,87 +58,6 @@ async def coco_lifespan(
         yield
 
 
-# -----------------------------------------------------------------------------
-# Target table row
-# -----------------------------------------------------------------------------
-
-
-@dataclass
-class DocEmbedding:
-    """
-    One row in Postgres.
-
-    Each Markdown chunk becomes one row.
-
-    id:
-        Stable chunk id.
-
-    filename:
-        Source Markdown file path.
-
-    chunk_start / chunk_end:
-        Character offsets inside the source Markdown file.
-
-    text:
-        The raw Markdown chunk.
-
-    embedding:
-        Vector generated from the chunk text.
-    """
-
-    id: int
-
-    source_path: str
-    heading_path: str
-    file_modified_at: datetime
-    chunk_hash: str
-
-    chunk_index: int
-    chunk_start: int
-    chunk_end: int
-    text: str
-    embedding: Annotated[NDArray, EMBEDDER]
-
-
-# Heading Helper
-def heading_path_at(text: str, start_offset: int, end_offset: int) -> str:
-    stack: list[str] = []
-    heading_regex = r"^(#{1,6})\s+(.+?)\s*$"
-
-    for line in text[:start_offset].splitlines():
-        match = re.match(heading_regex, line)
-        if not match:
-            continue
-
-        level = len(match.group(1))
-        title = match.group(2).strip().strip("#").strip()
-
-        stack = stack[: level - 1]
-        stack.append(title)
-
-    if not stack:
-        for line in text[start_offset:end_offset].splitlines():
-            match = re.match(heading_regex, line)
-            if not match:
-                continue
-
-            stack.append(match.group(2).strip())
-            break
-
-    return " > ".join(stack)
-
-
-# -----------------------------------------------------------------------------
-# Chunk processing
-# -----------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class IndexedChunk:
-    index: int
-    chunk: Chunk
-
-
 @coco.fn
 async def process_chunk(
     indexed: IndexedChunk,
@@ -199,7 +65,7 @@ async def process_chunk(
     file_modified_at: datetime,
     full_text: str,
     id_gen: IdGenerator,
-    table: postgres.TableTarget[DocEmbedding],
+    table: postgres.TableTarget[ChunkEmbedding],
 ) -> None:
     """
     Turn one Markdown chunk into one target table row.
@@ -222,7 +88,7 @@ async def process_chunk(
     )
 
     table.declare_row(
-        row=DocEmbedding(
+        row=ChunkEmbedding(
             id=await id_gen.next_id(f"{source_path}:{indexed.index}:{chunk_hash}"),
             source_path=source_path,
             heading_path=heading_path,
@@ -240,7 +106,7 @@ async def process_chunk(
 @coco.fn(memo=True)
 async def process_file(
     file: FileLike,
-    table: postgres.TableTarget[DocEmbedding],
+    table: postgres.TableTarget[ChunkEmbedding],
 ) -> None:
     """
     Read one Markdown file, split it into overlapping chunks, then process
@@ -294,7 +160,7 @@ async def app_main(sourcedir: pathlib.Path) -> None:
         PG_DB,
         table_name=TABLE_NAME,
         table_schema=await postgres.TableSchema.from_class(
-            DocEmbedding,
+            ChunkEmbedding,
             primary_key=["id"],
         ),
         pg_schema_name=PG_SCHEMA_NAME,
@@ -324,145 +190,3 @@ app = coco.App(
     app_main,
     sourcedir=MARKDOWN_DIR,
 )
-
-
-# -----------------------------------------------------------------------------
-# Query demo
-# -----------------------------------------------------------------------------
-
-@dataclass
-class QueryFilters:
-    source_path: str | None = None
-    heading: str | None = None
-
-
-async def query_once(
-    pool: asyncpg.Pool,
-    embedder: SentenceTransformerEmbedder,
-    query_text: str,
-    filters: QueryFilters | None = None,
-    *,
-    top_k: int = TOP_K,
-) -> None:
-    """
-    Embed the user's query and search nearest Markdown chunks in pgvector.
-
-    pgvector's <=> operator is cosine distance.
-    Lower distance means more similar.
-    """
-    query_vec = await embedder.embed(query_text)
-
-    async with pool.acquire() as conn:
-        conditions = []
-        params = [query_vec]
-        
-        if filters and filters.source_path:
-            params.append(f"%{filters.source_path}%")
-            conditions.append(f"source_path ILIKE ${len(params)}")
-
-        if filters and filters.heading:
-            params.append(f"%{filters.heading}%")
-            conditions.append(f"heading_path ILIKE ${len(params)}")
-
-        where_clause = ""
-        # Values are safely passed separately from SQL text. That prevents quoting bugs and SQL injection.
-
-        if conditions:
-            where_clause = "WHERE " + " AND ".join(conditions)
-
-        limit_param = len(params) + 1
-        params.append(top_k)
-
-        rows = await conn.fetch(
-            f"""
-            SELECT
-                source_path,
-               heading_path,
-                file_modified_at,
-                chunk_hash,
-                chunk_index,
-                chunk_start,
-                chunk_end,
-                text,
-                embedding <=> $1 AS distance
-            FROM "{PG_SCHEMA_NAME}"."{TABLE_NAME}"
-            {where_clause}
-            ORDER BY distance ASC
-            LIMIT ${limit_param}
-            """,
-            *params,
-        )
-
-    for row in rows:
-        distance = float(row["distance"])
-        score = 1.0 - distance
-
-        print(f"[score={score:.3f} distance={distance:.3f}] {row['source_path']}")
-        print(f"heading: {row['heading_path']}")
-        print(f"chars: {row['chunk_start']}..{row['chunk_end']}")
-        print(row["text"])
-        print("---")
-
-
-async def query(
-    initial_query: str | None = None,
-    filters: QueryFilters | None = None
-) -> None:
-    """
-    Query mode.
-
-    This is separate from CocoIndex update mode. First run:
-
-        cocoindex update main
-
-    Then run:
-
-        python main.py "your question"
-    """
-    embedder = SentenceTransformerEmbedder(EMBED_MODEL)
-
-    async with asyncpg.create_pool(
-        DATABASE_URL,
-        init=register_vector,
-    ) as pool:
-        if initial_query is not None:
-            await query_once(pool, embedder, initial_query, filters)
-            return
-
-        while True:
-            query_text = input("Enter search query, or Enter to quit: ").strip()
-            if not query_text:
-                break
-
-            await query_once(pool, embedder, query_text, filters)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Query the Markdown semantic index.")
-
-    parser.add_argument(
-        "query",
-        nargs="*",
-        help="Search query text.",
-    )
-
-    parser.add_argument(
-        "--source",
-        help="Filter results to source paths containing this text.",
-    )
-
-    parser.add_argument(
-        "--heading",
-        help="Filter results to headings containing this text.",
-    )
-
-    args = parser.parse_args()
-
-    filters = QueryFilters(
-        source_path=args.source,
-        heading=args.heading,
-    )
-
-    initial_query = " ".join(args.query) if args.query else None
-
-    asyncio.run(query(initial_query, filters=filters))

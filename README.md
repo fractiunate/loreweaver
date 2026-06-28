@@ -6,6 +6,17 @@ It collects files, docs, issues, pull requests, decisions, and project principle
 
 > Loreweaver turns evolving project artifacts into living knowledge, then helps keep future changes consistent with it.
 
+
+
+## Build
+
+Use this when you changed pyproject.toml, entry points, package metadata, or build config:
+
+```bash
+uv run python -m compileall src
+uv sync --reinstall-package loreweaver
+```
+
 ## Product framing
 
 Loreweaver is not just document search.
