@@ -1,55 +1,52 @@
-# cocoindex-psql
+# Loreweaver
 
-Minimal CocoIndex + PostgreSQL/pgvector Markdown embedding demo.
+Loreweaver builds a living knowledge base for software projects.
 
-## Setup
+It collects files, docs, issues, pull requests, decisions, and project principles, then distills them into traceable knowledge claims. As the project changes, Loreweaver keeps that knowledge up to date and helps evaluate whether new ideas, features, and plans are consistent with the current codebase, tech stack, values, and mission.
 
-```bash
-uv sync
-podman compose up -d
+> Loreweaver turns evolving project artifacts into living knowledge, then helps keep future changes consistent with it.
+
+## Product framing
+
+Loreweaver is not just document search.
+
+It is:
+
+```text
+project memory + claim extraction + consistency checking
 ```
 
-Create or check `.env`:
+The core model is:
 
-```env
-POSTGRES_URL=postgresql://cocoindex:cocoindex@localhost:15000/cocoindex
-COCOINDEX_DB=./cocoindex.db
+```text
+sources -> claims -> knowledge graph/index -> consistency checks -> guidance
 ```
 
-Put Markdown files in `markdown_files/`.
+## Sources
 
-## Index documents
+Loreweaver is designed to collect knowledge from project artifacts such as:
 
-```bash
-uv run cocoindex update main.py
-```
+- files
+- docs
+- ADRs
+- issues
+- PRs
+- plans
+- mission statements
+- tech stack notes
+- project values
 
-To rerun processing for all files, even if memoized inputs are unchanged:
+## What Loreweaver should help answer
 
-```bash
-uv run cocoindex update main --full-reprocess
-```
+Future checks include questions like:
 
-For a clean CocoIndex DB reset/rebuild after schema changes:
+- Does this feature contradict an ADR?
+- Does this plan fit the current tech stack?
+- Does this issue conflict with project values?
+- Does this change duplicate existing behavior?
+- Does this proposal drift from the mission?
+- What existing knowledge supports or challenges this idea?
 
-```bash
-uv run cocoindex update main --reset
-```
+## Local setup
 
-To skip the confirmation prompt:
-
-```bash
-uv run cocoindex update main --reset --force
-```
-
-## Query
-
-```bash
-uv run python main.py "your search question"
-```
-
-## Stop Postgres
-
-```bash
-podman compose down
-```
+See [local-setup.md](local-setup.md) for the current local CocoIndex and Postgres setup instructions.

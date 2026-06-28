@@ -1,3 +1,5 @@
+mission: MISSION.md
+
 files:
   exclude:
     - .env
