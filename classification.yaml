@@ -1,0 +1,42 @@
+files:
+  exclude:
+    - .env
+    - ."venv/*"
+    - "__pycache__/*"
+    - "cocoindex.db"
+  include:
+    - pattern: -"./pi/skills/*.md"
+        -"./pi/skills/**/*.md"
+      role: skill
+
+    - pattern: "src/**/*.py"
+      role: code
+
+    - pattern: "main.py"
+      role: code
+
+    - pattern: "README.md"
+      role: documentation
+
+github:
+  issues:
+    # - default_role: issue -> done in code/ default asign from cocoindex
+
+    - label: bug
+      role: bug_report
+
+    - label: feature
+      role: feature_request
+
+    - label: documentation
+      role: documentation_task
+
+  pull_requests:
+    # - default_role: pull_request  -> done in code/ default asign from cocoindex
+
+    - label: adr
+      role: adr_proposal
+
+    - role: feature_merge
+      branch_from: "feature/"
+      branch_to: "main"

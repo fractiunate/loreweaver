@@ -1,0 +1,12 @@
+[project]
+name = "cocoindex-psql"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "asyncpg>=0.31.0",
+    "cocoindex[postgres,sentence-transformers]>=1.0.14",
+    "numpy>=2.5.0",
+    "python-dotenv>=1.2.2",
+]
